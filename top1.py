@@ -59,6 +59,9 @@ class Character(pygame.sprite.Sprite):
 	maxSpeed = 0
 	armor = 0
 	walls = None
+	pointX = [200,600,800]
+	pointY = [75,75,300]
+	it = 0
 	
 	def __init__(self,x,y,maxSpeed,size,color):
 		pygame.sprite.Sprite.__init__(self)
@@ -92,37 +95,45 @@ class Character(pygame.sprite.Sprite):
 			if event.key == pygame.K_DOWN:
 				self.speedY = 0
 		
+	# we can modify this and intigrate it into the update methode too
 	def propagateL(self):
 			self.rect.x -= self.maxSpeed
 
+	# i dont think we will be needing this but we can keep it for now anyways
 	def draw(self,screen):
 		pygame.draw.rect(screen,self.color,[self.rect.x,self.rect.y,self.size,self.size])
 
+	# this will be integrated in the update methode later
 	def collide(self,Character):
 		if self.rect.right > Character.rect.left and self.rect.left < Character.rect.left and self.rect.top < Character.rect.top and self.rect.bottom > Character.rect.top:
 			return True
 		return False
 
-	def follow(self, player):
-		dx = player.rect.x - self.rect.x
-		dy = player.rect.y - self.rect.y
-	  	dist = math.hypot(dx, dy)
-	  	dx = dx / dist
-	  	dy = dy / dist
-	  	self.rect.x += dx * self.maxSpeed
-        	self.rect.y += dy * self.maxSpeed
+	def follow(self):
+		if self.it < 3:
+			for i in range(self.it,self.it+1):
+				if self.rect.x != self.pointX[i] or self.rect.y != self.pointY[i]:
+					dx = self.pointX[i] - self.rect.x
+					dy = self.pointY[i] - self.rect.y
+			  		dist = math.hypot(dx, dy)
+			  		dx = dx / dist
+	  				dy = dy / dist
+		  			self.speedX = dx * self.maxSpeed
+        				self.speedY = dy * self.maxSpeed
+				else:
+					self.it +=1
 
 	def update(self):
-		you.rect.x += you.speedX
+		self.rect.x += self.speedX
 		block_hit_list = pygame.sprite.spritecollide(self, self.walls, False)
 		for block in block_hit_list:
 		# If we are moving right, set our right side to the left side of the item we hit
-			if self.speedX > 0:
+			if self.speedX > 0 :
 				self.rect.right = block.rect.left
 			else:
 				self.rect.left = block.rect.right
 		# Check and see if we hit anything
-		you.rect.y += you.speedY
+		self.rect.y += self.speedY
 		block_hit_list = pygame.sprite.spritecollide(self, self.walls, False)
 		for block in block_hit_list:
 		# Reset our position based on the top/bottom of the object.
@@ -170,7 +181,7 @@ all_sprite_list.add(wall)
 wall = Wall(screenSizeWidth-5,5,5,screenSizeHeight-10)
 wall_list.add(wall)
 all_sprite_list.add(wall)
-#base walls
+#left base walls
 wall = Wall(5,screenSizeHeight*0.45,screenSizeWidth*0.05,5)
 wall_list.add(wall)
 all_sprite_list.add(wall)
@@ -193,12 +204,39 @@ all_sprite_list.add(wall)
 wall = Wall((screenSizeWidth*0.95)-10,screenSizeHeight*0.45,5,(screenSizeHeight*0.1)+5)
 wall_list.add(wall)
 all_sprite_list.add(wall)
+#coin walls
+wall = Wall(screenSizeWidth*0.25,screenSizeHeight*0.25,screenSizeWidth*0.2125,5)
+wall_list.add(wall)
+all_sprite_list.add(wall)
+wall = Wall(screenSizeWidth*0.5375,screenSizeHeight*0.25,screenSizeWidth*0.2125,5)
+wall_list.add(wall)
+all_sprite_list.add(wall)
+wall = Wall(screenSizeWidth*0.25,screenSizeHeight*0.75,screenSizeWidth*0.2125,5)
+wall_list.add(wall)
+all_sprite_list.add(wall)
+wall = Wall(screenSizeWidth*0.5375,screenSizeHeight*0.75,screenSizeWidth*0.2125,5)
+wall_list.add(wall)
+all_sprite_list.add(wall)
+wall = Wall(screenSizeWidth*0.25,screenSizeHeight*0.25,5,screenSizeHeight*0.2)
+wall_list.add(wall)
+all_sprite_list.add(wall)
+wall = Wall(screenSizeWidth*0.74375,screenSizeHeight*0.25,5,screenSizeHeight*0.2)
+wall_list.add(wall)
+all_sprite_list.add(wall)
+wall = Wall(screenSizeWidth*0.25,screenSizeHeight*0.55,5,screenSizeHeight*0.2)
+wall_list.add(wall)
+all_sprite_list.add(wall)
+wall = Wall(screenSizeWidth*0.74375,screenSizeHeight*0.55,5,screenSizeHeight*0.2)
+wall_list.add(wall)
+all_sprite_list.add(wall)
 #no more walls pleeeeease!!!
 you = Character(10,350,3,50,GREEN)
 you.walls = wall_list
 all_sprite_list.add(you)
+creep = Character(screenSizeWidth*0.065,screenSizeHeight*0.498,2,10,BLUE)
+creep.walls = wall_list
+all_sprite_list.add(creep)
 
-runner = Character(random.randrange(-10,0),random.randrange(0,490),2,10,BLUE)
 bullet = Character(screenSizeWidth,random.randrange(0,screenSizeHeight-5),5,5,RED)
 bullet_list.add(bullet)
 bullet = Character(screenSizeWidth,random.randrange(0,screenSizeHeight-5),5,5,RED)
@@ -228,18 +266,15 @@ while not done:
 			score += 1
 			textScore = font.render("Score: " + str(score),True,BLACK)
 
-	if you.rect.x != runner.rect.x and you.rect.y != runner.rect.y:
-		runner.follow(you)
+	creep.follow()
 
-	all_sprite_list.update()
+	you.update()
+	creep.update()
 	screen.fill(WHITE)
 
 	#drawing code goes here
 	all_sprite_list.draw(screen)
 	bullet_list.draw(screen)
-#	you.draw(screen)
-	runner.draw(screen)
-#	bullet_1.draw(screen)
 	screen.blit(textScore,[screenSizeWidth-100,10])
 
 	if score >= 100:
