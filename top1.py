@@ -1,5 +1,3 @@
-#this is a test of the github sync! :)
-
 # import lib
 import math
 import pygame
@@ -53,11 +51,8 @@ class GameMenu():
 
 
 class Character(pygame.sprite.Sprite):
-	name = "fighter"
 	speedX = 0
 	speedY = 0
-	maxHitPoints = 100
-	currentHitPoints = 100
 	maxSpeed = 0
 	walls = None
 	pointX = [200,600,800]
@@ -72,8 +67,6 @@ class Character(pygame.sprite.Sprite):
 		self.rect.x = startpos[0]
 		self.rect.y = startpos[1]
 		self.maxSpeed = maxSpeed
-		self.size = size
-		self.color = color
 
 	def move(self):
 		if event.type == pygame.KEYDOWN:
@@ -96,16 +89,6 @@ class Character(pygame.sprite.Sprite):
 			if event.key == pygame.K_DOWN:
 				self.speedY = 0
 		
-	# i dont think we will be needing this but we can keep it for now anyways
-	def draw(self,screen):
-		pygame.draw.rect(screen,self.color,[self.pos[0],self.pos[1],self.size,self.size])
-
-	# this will be integrated in the update methode later
-#	def collide(self,Character):
-#		if self.rect.right > Character.rect.left and self.rect.left < Character.rect.left and self.rect.top < Character.rect.top and self.rect.bottom > Character.rect.top:
-#			return True
-#		return False
-
 	def follow(self):
 		if self.it < 3:
 			for i in range(self.it,self.it+1):
@@ -188,8 +171,6 @@ class Bullet(pygame.sprite.Sprite):
 		self.rect.y += self.dy
 		if self.rect.x < 0 or self.rect.y < 0:
 			self.kill()
-#		self.rect.centerx = round(self.pos[0],0)
-#		self.rect.centery = round(self,pos[1],0)
 
 pygame.init()
 
