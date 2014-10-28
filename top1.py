@@ -1,3 +1,5 @@
+#this is a test of the github sync! :)
+
 # import lib
 import math
 import pygame
