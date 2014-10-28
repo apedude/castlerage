@@ -57,19 +57,18 @@ class Character(pygame.sprite.Sprite):
 	maxHitPoints = 100
 	currentHitPoints = 100
 	maxSpeed = 0
-	armor = 0
 	walls = None
 	pointX = [200,600,800]
 	pointY = [75,75,300]
 	it = 0
 	
-	def __init__(self,x,y,maxSpeed,size,color):
+	def __init__(self,startpos = (50,100),maxSpeed = 4,size = 5,color = GREEN):
 		pygame.sprite.Sprite.__init__(self)
 		self.image = pygame.Surface([size,size])
 		self.image.fill(color)
 		self.rect = self.image.get_rect()
-		self.rect.y = y
-		self.rect.x = x
+		self.rect.x = startpos[0]
+		self.rect.y = startpos[1]
 		self.maxSpeed = maxSpeed
 		self.size = size
 		self.color = color
@@ -95,19 +94,15 @@ class Character(pygame.sprite.Sprite):
 			if event.key == pygame.K_DOWN:
 				self.speedY = 0
 		
-	# we can modify this and intigrate it into the update methode too
-	def propagateL(self):
-			self.rect.x -= self.maxSpeed
-
 	# i dont think we will be needing this but we can keep it for now anyways
 	def draw(self,screen):
-		pygame.draw.rect(screen,self.color,[self.rect.x,self.rect.y,self.size,self.size])
+		pygame.draw.rect(screen,self.color,[self.pos[0],self.pos[1],self.size,self.size])
 
 	# this will be integrated in the update methode later
-	def collide(self,Character):
-		if self.rect.right > Character.rect.left and self.rect.left < Character.rect.left and self.rect.top < Character.rect.top and self.rect.bottom > Character.rect.top:
-			return True
-		return False
+#	def collide(self,Character):
+#		if self.rect.right > Character.rect.left and self.rect.left < Character.rect.left and self.rect.top < Character.rect.top and self.rect.bottom > Character.rect.top:
+#			return True
+#		return False
 
 	def follow(self):
 		if self.it < 3:
@@ -124,6 +119,7 @@ class Character(pygame.sprite.Sprite):
 					self.it +=1
 
 	def update(self):
+		pressedkeys = pygame.key.get_pressed()
 		self.rect.x += self.speedX
 		block_hit_list = pygame.sprite.spritecollide(self, self.walls, False)
 		for block in block_hit_list:
@@ -142,6 +138,22 @@ class Character(pygame.sprite.Sprite):
 			else:
 				self.rect.top = block.rect.bottom
 
+		if pressedkeys[pygame.K_SPACE]:
+			if self.speedX > 0:
+				bullet = Bullet(self)
+				bullet.update()
+			if self.speedX < 0:
+				bullet = Bullet(self)
+				bullet.update()
+			if self.speedY > 0:
+				bullet = Bullet(self)
+				bullet.update()
+			if self.speedY < 0:
+				bullet = Bullet(self)
+				bullet.update()
+
+			
+
 class Wall(pygame.sprite.Sprite):
 	
 	def __init__(self, x, y, width, height):
@@ -152,9 +164,34 @@ class Wall(pygame.sprite.Sprite):
 		self.rect.y = y
 		self.rect.x = x
 
+class Bullet(pygame.sprite.Sprite):
+
+	def __init__(self,player):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.Surface([5,5])
+                self.image.fill(BLACK)
+                self.rect = self.image.get_rect()
+		self.player = player
+		self.dx = 0
+		self.dy = 0
+		self.color = RED
+                self.rect.x = player.rect.x
+                self.rect.y = player.rect.y
+		self.dx += self.player.speedX
+		self.dy += self.player.speedY
+		self.update()
+		
+	def update(self):
+		self.rect.x += self.dx
+		self.rect.y += self.dy
+		if self.rect.x < 0 or self.rect.y < 0:
+			self.kill()
+#		self.rect.centerx = round(self.pos[0],0)
+#		self.rect.centery = round(self,pos[1],0)
+
 pygame.init()
 
-# Variables
+## Variables
 screenSizeWidth = 800
 screenSizeHeight = 600
 size = (screenSizeWidth,screenSizeHeight)
@@ -229,18 +266,15 @@ all_sprite_list.add(wall)
 wall = Wall(screenSizeWidth*0.74375,screenSizeHeight*0.55,5,screenSizeHeight*0.2)
 wall_list.add(wall)
 all_sprite_list.add(wall)
-#no more walls pleeeeease!!!
-you = Character(10,350,3,50,GREEN)
+#players
+you = Character((10,350),3,50,GREEN)
 you.walls = wall_list
 all_sprite_list.add(you)
-creep = Character(screenSizeWidth*0.065,screenSizeHeight*0.498,2,10,BLUE)
+#creeps
+creep = Character((screenSizeWidth*0.065,screenSizeHeight*0.498),2,10,BLUE)
 creep.walls = wall_list
 all_sprite_list.add(creep)
 
-bullet = Character(screenSizeWidth,random.randrange(0,screenSizeHeight-5),5,5,RED)
-bullet_list.add(bullet)
-bullet = Character(screenSizeWidth,random.randrange(0,screenSizeHeight-5),5,5,RED)
-bullet_list.add(bullet)
 
 
 #menuItems = ('Start','Options','Quit')
@@ -255,32 +289,16 @@ while not done:
 
 	#game logic
 	you.move()
-	for bullet in bullet_list:
-		if bullet.rect.x < screenSizeWidth-1 or bullet.rect.x > -5:
-			bullet.propagateL()
-		if bullet.rect.x < -5:
-			bullet_list.remove(bullet)
-			bullet = Character(screenSizeWidth,random.randrange(0,screenSizeHeight-5),5,5,RED)
-			bullet_list.add(bullet)
-		if you.collide(bullet):
-			score += 1
-			textScore = font.render("Score: " + str(score),True,BLACK)
 
 	creep.follow()
 
-	you.update()
-	creep.update()
 	screen.fill(WHITE)
+        you.update()
+        creep.update()
 
 	#drawing code goes here
 	all_sprite_list.draw(screen)
-	bullet_list.draw(screen)
 	screen.blit(textScore,[screenSizeWidth-100,10])
-
-	if score >= 100:
-		screen.fill(BLACK)
-		textScore = font.render("GAME OVER",True,WHITE)
-		screen.blit(textScore,[screenSizeWidth/2,screenSizeHeight/2])
 
 	pygame.display.flip()
 	clock.tick(60)	
