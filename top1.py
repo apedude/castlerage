@@ -9,6 +9,7 @@ WHITE = (255,255,255)
 GREEN = (0,255,0)
 BLUE  = (0,0,255)
 RED   = (255,0,0)
+YELLOW = (0,255,125)
 
 clock = pygame.time.Clock()
 
@@ -181,11 +182,32 @@ class Bullet(pygame.sprite.Sprite):
 		if self.dx == 0 and self.dy == 0:
 			self.kill()
 
+class Coin(pygame.sprite.Sprite):
+
+	def __init__(self,startpos = (20,20)):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.Surface([10,10])
+		self.image.fill(YELLOW)
+		self.rect = self.image.get_rect()
+		self.rect.x = startpos[0]
+		self.rect.y = startpos[1]
+		self.progress = 0
+
+	def capture(self,Character):
+		if Character.rect.x > screenSizeWidth*0.45 and Character.rect.x < screenSizeWidth*0.55 and Character.rect.y > screenSizeHeight*0.45 and Character.rect.y < screenSizeHeight*0.55:
+			if self.progress < 1:
+				self.progress += 0.001
+				pygame.draw.rect(screen, BLUE,pygame.Rect(screenSizeWidth*0.1,screenSizeHeight*0.1,100*self.progress,10))
+			else:
+				self.kill()
+				self.progress = 0
+				
+		
 
 pygame.init()
 
 ## Variables
-screenSizeWidth = 800
+screenSizeWidth = 1200
 screenSizeHeight = 600
 size = (screenSizeWidth,screenSizeHeight)
 screen = pygame.display.set_mode(size)
@@ -268,7 +290,9 @@ all_sprite_list.add(you)
 creep = Character((screenSizeWidth*0.065,screenSizeHeight*0.498),2,10,BLUE,25)
 creep.walls = wall_list
 all_sprite_list.add(creep)
-
+#coin
+coin = Coin((screenSizeWidth*0.5,screenSizeHeight*0.5))
+all_sprite_list.add(coin)
 
 #menuItems = ('Start','Options','Quit')
 #gm = GameMenu(screen,menuItems,BLACK,WHITE)
@@ -283,13 +307,12 @@ while not done:
 	#game logic
 	you.move()
 	creep.follow()
-
 	all_sprite_list.update()
 	bullet_list.update()
-
 	screen.fill(WHITE)
-#	you.update()
+
 	#drawing code goes here
+	coin.capture(you)
 	all_sprite_list.draw(screen)
 	bullet_list.draw(screen)
 	screen.blit(textScore,[screenSizeWidth-100,10])
