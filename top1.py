@@ -9,7 +9,8 @@ WHITE = (255,255,255)
 GREEN = (0,255,0)
 BLUE  = (0,0,255)
 RED   = (255,0,0)
-YELLOW = (0,255,125)
+YELLOW = (255,255,0)
+ORANGE = (255,150,0)
 
 clock = pygame.time.Clock()
 
@@ -156,13 +157,14 @@ class Wall(pygame.sprite.Sprite):
 	def update(self):
 
 		bullet_hit_list = pygame.sprite.spritecollide(self,Character.bullets,True)
+		bullet_hit_list = pygame.sprite.spritecollide(self,AIPlayer.bullets,True)
 
 class Bullet(pygame.sprite.Sprite):
 
 	def __init__(self,player):
 		pygame.sprite.Sprite.__init__(self)
 		self.image = pygame.Surface([5,5])
-		self.image.fill(RED)
+		self.image.fill(ORANGE)
                 self.rect = self.image.get_rect()
 		self.player = player
 		self.dx = 0
@@ -193,21 +195,89 @@ class Coin(pygame.sprite.Sprite):
 		self.rect.y = startpos[1]
 		self.progress = 0
 
-	def capture(self,Character):
-		if Character.rect.x > screenSizeWidth*0.45 and Character.rect.x < screenSizeWidth*0.55 and Character.rect.y > screenSizeHeight*0.45 and Character.rect.y < screenSizeHeight*0.55:
+	def capture(self,player):
+		if player.rect.x > screenSizeWidth*0.45 and player.rect.x < screenSizeWidth*0.55 and player.rect.y > screenSizeHeight*0.45 and player.rect.y < screenSizeHeight*0.55:
 			if self.progress < 1:
 				self.progress += 0.001
 				pygame.draw.rect(screen, BLUE,pygame.Rect(screenSizeWidth*0.1,screenSizeHeight*0.1,100*self.progress,10))
+				pygame.draw.rect(screen, RED,pygame.Rect(screenSizeWidth*0.1,screenSizeHeight*0.1,100,10),1)
 			else:
 				self.kill()
 				self.progress = 0
-				
-		
+
+class AIPlayer(pygame.sprite.Sprite):
+
+	walls = None
+	bullets = pygame.sprite.Group()
+
+	def __init__(self,startpos = (710,250),starthp = 100):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.Surface([30,30])
+		self.image.fill(RED)
+		self.rect = self.image.get_rect()
+		self.rect.x = startpos[0]
+		self.rect.y = startpos[1]
+		self.maxspeed = 2
+		self.speedX = 0
+		self.speedY = 0
+		self.state = "neutral"
+
+	def move(self,Coin,player):
+		if self.state == "neutral":
+			self.state = "chasecoin"
+		if self.state == "chasecoin":
+			if self.rect.x != Coin.rect.x or self.rect.y != Coin.rect.y:
+				dx = Coin.rect.x - self.rect.x
+				dy = Coin.rect.y - self.rect.y
+				dist = math.hypot(dx, dy)
+				dx = dx / dist
+				dy = dy / dist
+				self.speedX = dx * self.maxspeed
+				self.speedY = dy * self.maxspeed
+
+		if self.rect.x != player.rect.x or self.rect.y != player.rect.y:
+				dx = player.rect.x - self.rect.x
+				dy = player.rect.y - self.rect.y
+				dist = math.hypot(dx,dy)
+				if dist < 150:
+					self.state = "chaseplayer"
+					dx = dx / dist
+					dy = dy / dist
+					self.speedX = dx * self.maxspeed
+					self.speedY = dy * self.maxspeed
+					bullet = Bullet(self)
+					self.bullets.add(bullet)
+
+				else:
+					self.state = "chasecoin"
+
+	def update(self):
+		self.rect.x += self.speedX
+		block_hit_list = pygame.sprite.spritecollide(self, self.walls, False)
+		for block in block_hit_list:
+		# If we are moving right, set our right side to the left side of the item we hit
+			if self.speedX > 0 :
+				self.rect.right = block.rect.left
+				self.rect.y += self.speedY*3.3
+			else:
+				self.rect.left = block.rect.right
+				self.rect.y += self.speedY*3.3
+
+		self.rect.y += self.speedY		
+		block_hit_list = pygame.sprite.spritecollide(self, self.walls, False)
+		for block in block_hit_list:
+		# Reset our position based on the top/bottom of the object.
+			if self.speedY > 0:
+				self.rect.bottom = block.rect.top
+				self.rect.x += self.speedX*3.3
+			else:
+				self.rect.top = block.rect.bottom
+				self.rect.x += self.speedX*3.3
 
 pygame.init()
 
 ## Variables
-screenSizeWidth = 1200
+screenSizeWidth = 800
 screenSizeHeight = 600
 size = (screenSizeWidth,screenSizeHeight)
 screen = pygame.display.set_mode(size)
@@ -219,7 +289,6 @@ textScore = font.render("Score: " + str(score),True,BLACK)
 # List are generated and filled here
 wall_list = pygame.sprite.Group()
 all_sprite_list = pygame.sprite.Group()
-bullet_list = pygame.sprite.Group()
 #boarder walls
 wall = Wall(0,0,5,screenSizeHeight)
 wall_list.add(wall)
@@ -284,7 +353,7 @@ all_sprite_list.add(wall)
 #players
 you = Character((10,350),3,50,GREEN,100)
 you.walls = wall_list
-bullet_list = you.bullets
+bullet_list_player = you.bullets
 all_sprite_list.add(you)
 #creeps
 creep = Character((screenSizeWidth*0.065,screenSizeHeight*0.498),2,10,BLUE,25)
@@ -293,6 +362,11 @@ all_sprite_list.add(creep)
 #coin
 coin = Coin((screenSizeWidth*0.5,screenSizeHeight*0.5))
 all_sprite_list.add(coin)
+#AI player
+aiplayer = AIPlayer()
+aiplayer.walls = wall_list
+bullet_list_ai = aiplayer.bullets
+all_sprite_list.add(aiplayer)
 
 #menuItems = ('Start','Options','Quit')
 #gm = GameMenu(screen,menuItems,BLACK,WHITE)
@@ -306,15 +380,19 @@ while not done:
 
 	#game logic
 	you.move()
+	aiplayer.move(coin,you)
 	creep.follow()
 	all_sprite_list.update()
-	bullet_list.update()
+	bullet_list_player.update()
+	bullet_list_ai.update()
 	screen.fill(WHITE)
 
 	#drawing code goes here
 	coin.capture(you)
+	coin.capture(aiplayer)
 	all_sprite_list.draw(screen)
-	bullet_list.draw(screen)
+	bullet_list_player.draw(screen)
+	bullet_list_ai.draw(screen)
 	screen.blit(textScore,[screenSizeWidth-100,10])
 
 	pygame.display.flip()
